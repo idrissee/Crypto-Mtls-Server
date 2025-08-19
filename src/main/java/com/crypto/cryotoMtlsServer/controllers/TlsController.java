@@ -1,5 +1,6 @@
 package com.crypto.cryotoMtlsServer.controllers;
 
+import com.crypto.cryotoMtlsServer.configuration.AppConfig;
 import com.crypto.cryotoMtlsServer.model.dtos.CertificateRequest;
 import com.crypto.cryotoMtlsServer.model.dtos.CertificateRespond;
 import com.crypto.cryotoMtlsServer.services.interfaces.ICertificateService;
@@ -23,6 +24,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class TlsController {
 
+    private final AppConfig appConfig;
     private final ICertificateUtilsService certificateUtilsService;
     private final ICertificateService certificateService;
 
@@ -66,18 +68,19 @@ public class TlsController {
 
             X509Certificate mtlsCert = certificateService.signCSR(
                     certificateRequest.getMtls_csr(),
-                    "src/main/resources/certs/mtls_root_ca.cert.pem",
-                    "src/main/resources/private/mtls_root_ca.key.pem"
+                    appConfig.getSecurity().getMtlsCaCertPath(),
+                    appConfig.getSecurity().getMtlsCaKeyPath()
+
             );
 
             X509Certificate signingCert = certificateService.signCSR(
                     certificateRequest.getSigning_csr(),
-                    "src/main/resources/certs/signing_root_ca.cert.pem",
-                    "src/main/resources/private/signing_root_ca.key.pem"
+                    appConfig.getSecurity().getSigningCaCertPath(),
+                    appConfig.getSecurity().getSigningCaKeyPath()
             );
 
-            String mtlsRootCa = certificateUtilsService.toBase64(certificateUtilsService.loadCertificate("src/main/resources/certs/mtls_root_ca.cert.pem"));
-            String signingRootCa = certificateUtilsService.toBase64(certificateUtilsService.loadCertificate("src/main/resources/certs/signing_root_ca.cert.pem"));
+            String mtlsRootCa = certificateUtilsService.loadCertAsBase64(appConfig.getSecurity().getMtlsCaCertPath());
+            String signingRootCa = certificateUtilsService.loadCertAsBase64(appConfig.getSecurity().getSigningCaCertPath());
 
             return ResponseEntity.ok()
                    .body(

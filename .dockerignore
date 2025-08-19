@@ -1,0 +1,25 @@
+# Gradle / build
+.gradle
+build/
+out/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Git
+.git
+.gitignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets & certs (DO NOT include in build context)
+keystore/
+certs/
+private_keys/
+
+# Logs
+*.log

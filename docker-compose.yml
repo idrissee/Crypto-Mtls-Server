@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  crypto-mtls-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: crypto-mtls-server:latest
+    container_name: crypto-mtls-server
+    ports:
+      - "8443:8443"
+    volumes:
+          - ./keystore:/etc/certs:ro
+          - ./certs:/etc/certs_pub:ro
+          - ./private_keys:/etc/pki/private:ro
+    environment:
+        # Map Spring Boot SSL properties via env
+        - SERVER_SSL_KEY_STORE=/etc/certs/server-keystore.p12
+        - SERVER_SSL_KEY_STORE_PASSWORD=${SERVER_SSL_KEY_STORE_PASSWORD:-changeit}
+        - SERVER_SSL_KEY_STORE_TYPE=PKCS12
+
+        - APP_MTLS_CA_CERT=/etc/certs_pub/mtls_root_ca.crt
+        - APP_MTLS_CA_KEY=/etc/pki/private/mtls_root_ca.key.pem
+        - APP_SIGNING_CA_CERT=/etc/certs_pub/signing_root_ca.crt
+        - APP_SIGNING_CA_KEY=/etc/pki/private/signing_root_ca.key.pem
+        # Keep client auth disabled for now (TLS only)
+        - SERVER_SSL_CLIENT_AUTH=none
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:8443/tls-establish"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
