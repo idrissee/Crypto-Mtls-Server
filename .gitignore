@@ -5,6 +5,10 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+keystore/
+private_keys/
+certs/
+
 ### STS ###
 .apt_generated
 .classpath
