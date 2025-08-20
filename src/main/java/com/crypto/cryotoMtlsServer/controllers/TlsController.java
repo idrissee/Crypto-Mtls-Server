@@ -5,6 +5,10 @@ import com.crypto.cryotoMtlsServer.model.dtos.CertificateRequest;
 import com.crypto.cryotoMtlsServer.model.dtos.CertificateRespond;
 import com.crypto.cryotoMtlsServer.services.interfaces.ICertificateService;
 import com.crypto.cryotoMtlsServer.services.interfaces.ICertificateUtilsService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +26,7 @@ import java.util.Map;
 @RestController
 @Slf4j
 @RequiredArgsConstructor
+@Tag(name = "TLS end points", description = "Endpoints for managing TLS operations")
 public class TlsController {
 
     private final AppConfig appConfig;
@@ -29,6 +34,10 @@ public class TlsController {
     private final ICertificateService certificateService;
 
     @GetMapping("/tls-establish")
+    @Operation(summary = "Establish TLS connection", description = "Returns success if TLS handshake was established.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "TLS handshake completed successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error occurred while processing the request")})
     public ResponseEntity<Map<String, String>> tlsEstablish() {
         Map<String, String> response = new HashMap<>();
         response.put("status", "success");
@@ -37,6 +46,10 @@ public class TlsController {
     }
 
     @GetMapping("/import-cas")
+    @Operation(summary = "import CA's certificates", description = "This endpoint is used to import CA certificates.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully imported CA certificates"),
+            @ApiResponse(responseCode = "500", description = "Internal server error occurred while processing the request")})
     public ResponseEntity<Map<String, Object>> importCas() {
         Map<String, Object> response = new HashMap<>();
         try {
@@ -57,6 +70,12 @@ public class TlsController {
     }
 
     @PostMapping("/import-certificates")
+    @Operation(summary ="Import certificates", description = " This endpoint is used to import mTLS and signing certificates and their chain by signing CSRs.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Certificates imported successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error occurred while processing the request"),
+            @ApiResponse(responseCode = "400", description = "Bad request, invalid input or parameters")
+    } )
     public ResponseEntity<CertificateRespond> importCertificates(@Valid @RequestBody CertificateRequest certificateRequest) {
 
         try {
