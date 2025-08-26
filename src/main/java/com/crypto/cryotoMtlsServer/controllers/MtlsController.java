@@ -1,6 +1,8 @@
 package com.crypto.cryotoMtlsServer.controllers;
 
 
+import com.crypto.cryotoMtlsServer.exceptions.MissingCertificateException;
+import com.crypto.cryotoMtlsServer.services.impl.CertificateUtilsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -22,6 +24,7 @@ import java.security.cert.X509Certificate;
 @Tag( name ="Mtls endpoints" , description = "endpoints for managing mtls operation")
 public class MtlsController {
 
+    private final CertificateUtilsService certificateUtilsService;
 
     @Operation(
             summary = "Access a protected endpoint",
@@ -36,23 +39,14 @@ public class MtlsController {
     @GetMapping("/protected")
     public ResponseEntity<String> protectedEndpoint(HttpServletRequest request) {
 
-        try {
             X509Certificate[] certs = (X509Certificate[]) request.getAttribute("jakarta.servlet.request.X509Certificate");
 
-            if (certs != null && certs.length > 0) {
-                String subject = certs[0].getSubjectX500Principal().getName();
-                return ResponseEntity
-                        .status(HttpStatus.OK)
-                        .body("Hello secure client: " + subject);
-            } else {
-                return ResponseEntity
-                        .status(HttpStatus.FORBIDDEN)
-                        .body("No client certificate provided!");
-            }
-        } catch (Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Internal server error: " + e.getMessage());
+            String subject = certificateUtilsService.checkCertificate(certs);
+
+            return new ResponseEntity<>("Hello secure client: " + subject, HttpStatus.OK);
         }
-    }
+
+
 }
+
+

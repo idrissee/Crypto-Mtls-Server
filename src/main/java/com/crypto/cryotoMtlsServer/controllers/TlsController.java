@@ -1,6 +1,7 @@
 package com.crypto.cryotoMtlsServer.controllers;
 
 import com.crypto.cryotoMtlsServer.configuration.AppConfig;
+import com.crypto.cryotoMtlsServer.exceptions.MissingCertificateException;
 import com.crypto.cryotoMtlsServer.model.dtos.CertificateRequest;
 import com.crypto.cryotoMtlsServer.model.dtos.CertificateRespond;
 import com.crypto.cryotoMtlsServer.services.interfaces.ICertificateService;
@@ -12,12 +13,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.List;
@@ -34,39 +37,43 @@ public class TlsController {
     private final ICertificateService certificateService;
 
     @GetMapping("/tls-establish")
-    @Operation(summary = "Establish TLS connection", description = "Returns success if TLS handshake was established.")
+    @Operation(
+            summary = "Establish TLS connection"
+            , description = "Returns success if TLS handshake was established.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "TLS handshake completed successfully"),
-            @ApiResponse(responseCode = "500", description = "Internal server error occurred while processing the request")})
+            @ApiResponse(responseCode = "500", description = "Internal server error occurred while processing the request")
+    })
     public ResponseEntity<Map<String, String>> tlsEstablish() {
+
         Map<String, String> response = new HashMap<>();
         response.put("status", "success");
         response.put("message", "TLS handshake completed successfully.");
-        return ResponseEntity.ok(response);
+
+        return new ResponseEntity<>(response , HttpStatus.OK);
     }
 
     @GetMapping("/import-cas")
-    @Operation(summary = "import CA's certificates", description = "This endpoint is used to import CA certificates.")
+    @Operation(
+            summary = "import CA's certificates",
+            description = "This endpoint is used to import CA certificates.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Successfully imported CA certificates"),
-            @ApiResponse(responseCode = "500", description = "Internal server error occurred while processing the request")})
-    public ResponseEntity<Map<String, Object>> importCas() {
+            @ApiResponse(responseCode = "500", description = "Internal server error occurred while processing the request")
+    })
+    public ResponseEntity<Map<String, Object>> importCas() throws IOException {
         Map<String, Object> response = new HashMap<>();
-        try {
-            String mtlsRootCa = certificateUtilsService.toBase64(certificateUtilsService.loadCertificate(appConfig.getSecurity().getMtlsCaCertPath()));
-            String signingRootCa = certificateUtilsService.toBase64(certificateUtilsService.loadCertificate(appConfig.getSecurity().getSigningCaCertPath()));
+
+            String mtlsRootCa = certificateUtilsService.loadCertAsBase64(appConfig.getSecurity().getMtlsCaCertPath());
+            String signingRootCa = certificateUtilsService.loadCertAsBase64(appConfig.getSecurity().getSigningCaCertPath());
 
             response.put("status", "success");
             response.put("mtls_rootca", mtlsRootCa);
             response.put("signing_rootca", signingRootCa);
+
             log.info("Root CA certificates imported successfully.");
             return ResponseEntity.ok(response);
 
-        } catch (Exception e) {
-            response.put("status", "error");
-            response.put("message", e.getMessage());
-            return ResponseEntity.status(500).body(response);
-        }
     }
 
     @PostMapping("/import-certificates")
@@ -76,22 +83,14 @@ public class TlsController {
             @ApiResponse(responseCode = "500", description = "Internal server error occurred while processing the request"),
             @ApiResponse(responseCode = "400", description = "Bad request, invalid input or parameters")
     } )
-    public ResponseEntity<CertificateRespond> importCertificates(@Valid @RequestBody CertificateRequest certificateRequest) {
+    public ResponseEntity<CertificateRespond> importCertificates(@Valid @RequestBody CertificateRequest certificateRequest) throws Exception {
 
-        try {
-            if (certificateRequest.getMtls_csr() == null || certificateRequest.getSigning_csr() == null) {
-                log.info("MTLS csr or signing csr is null or empty");
-                return ResponseEntity.badRequest().body(
-                        new CertificateRespond( "error", "CSRs for mTLS and signing are required",null,null, null, null)
-                );
-            }
+           certificateUtilsService.checkCsr(certificateRequest.getMtls_csr(), certificateRequest.getSigning_csr());
 
-            X509Certificate mtlsCert = certificateService.signCSR("mtls",
-                    certificateRequest.getMtls_csr(),
-                    appConfig.getSecurity().getMtlsCaCertPath(),
-                    appConfig.getSecurity().getMtlsCaKeyPath()
-
-            );
+            X509Certificate mtlsCert = certificateService.signCSR("mtls"
+                    , certificateRequest.getMtls_csr()
+                    , appConfig.getSecurity().getMtlsCaCertPath()
+                    , appConfig.getSecurity().getMtlsCaKeyPath());
 
             X509Certificate signingCert = certificateService.signCSR("signing",
                     certificateRequest.getSigning_csr(),
@@ -101,25 +100,20 @@ public class TlsController {
 
             String mtlsRootCa = certificateUtilsService.loadCertAsBase64(appConfig.getSecurity().getMtlsCaCertPath());
             String signingRootCa = certificateUtilsService.loadCertAsBase64(appConfig.getSecurity().getSigningCaCertPath());
+
+
             log.info("csr's signed and imported certificates successfully.");
-            return ResponseEntity.ok()
-                   .body(
-                   new CertificateRespond(
+            return new ResponseEntity<>(new CertificateRespond(
                     "success",
                     "Certificates imported successfully",
                     certificateUtilsService.toBase64(mtlsCert),
-                           List.of(certificateUtilsService.toBase64(mtlsCert), mtlsRootCa),
+                    List.of(certificateUtilsService.toBase64(mtlsCert), mtlsRootCa),
                     certificateUtilsService.toBase64(signingCert),
-                            List.of(certificateUtilsService.toBase64(signingCert), signingRootCa)
-                   )
-                   );
-        } catch (Exception e) {
-            log.info(e.getMessage());
-            return ResponseEntity.status(500).body(
-                   new CertificateRespond( "error", e.getMessage(),null,null, null, null)
-            );
+                    List.of(certificateUtilsService.toBase64(signingCert), signingRootCa)
+            ),HttpStatus.OK);
+
         }
+
 
     }
 
-}

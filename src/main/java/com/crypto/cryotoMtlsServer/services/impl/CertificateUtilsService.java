@@ -1,6 +1,7 @@
 package com.crypto.cryotoMtlsServer.services.impl;
 
 
+import com.crypto.cryotoMtlsServer.exceptions.MissingCertificateException;
 import com.crypto.cryotoMtlsServer.services.interfaces.ICertificateUtilsService;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
@@ -88,15 +89,37 @@ public class CertificateUtilsService implements ICertificateUtilsService {
         }
     }
 
-
-            @Override
-            public String toBase64(X509Certificate cert) throws Exception {
-                StringWriter sw = new StringWriter();
-                try (JcaPEMWriter pemWriter = new JcaPEMWriter(sw)) {
-                    pemWriter.writeObject(cert);
-                }
-                return Base64.getEncoder().encodeToString(sw.toString().getBytes());
-            }
+    @Override
+    public String toBase64(X509Certificate cert) throws Exception {
+        StringWriter sw = new StringWriter();
+        try (JcaPEMWriter pemWriter = new JcaPEMWriter(sw)) {
+            pemWriter.writeObject(cert);
         }
+        return Base64.getEncoder().encodeToString(sw.toString().getBytes());
+    }
+
+
+    @Override
+    public String checkCertificate(X509Certificate[] certs) {
+
+        if (certs == null) {
+            throw new MissingCertificateException("No certificate found in request");
+        }
+
+        return certs[0].getSubjectX500Principal().getName();
+    }
+
+    @Override
+    public void checkCsr(String mtls_csr, String signing_csr){
+
+        if (mtls_csr == null || signing_csr == null) {
+            log.info("MTLS csr or signing csr is null or empty");
+
+            throw new MissingCertificateException("CSRs for mTLS and signing are required");
+        }
+
+    }
+
+}
 
 

@@ -12,4 +12,8 @@ public interface ICertificateUtilsService {
     X509Certificate loadCertificate(String path) throws Exception;
 
     String toBase64(X509Certificate cert) throws Exception;
+
+    String checkCertificate(X509Certificate[] certs);
+
+    void checkCsr(String mtls_csr, String signing_csr);
 }
