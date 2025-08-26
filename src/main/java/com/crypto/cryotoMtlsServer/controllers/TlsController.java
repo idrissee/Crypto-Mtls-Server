@@ -53,8 +53,8 @@ public class TlsController {
     public ResponseEntity<Map<String, Object>> importCas() {
         Map<String, Object> response = new HashMap<>();
         try {
-            String mtlsRootCa = certificateUtilsService.loadCertAsBase64("certs/mtls_root_ca.cert.pem");
-            String signingRootCa = certificateUtilsService.loadCertAsBase64("certs/signing_root_ca.cert.pem");
+            String mtlsRootCa = certificateUtilsService.toBase64(certificateUtilsService.loadCertificate(appConfig.getSecurity().getMtlsCaCertPath()));
+            String signingRootCa = certificateUtilsService.toBase64(certificateUtilsService.loadCertificate(appConfig.getSecurity().getSigningCaCertPath()));
 
             response.put("status", "success");
             response.put("mtls_rootca", mtlsRootCa);
@@ -80,19 +80,20 @@ public class TlsController {
 
         try {
             if (certificateRequest.getMtls_csr() == null || certificateRequest.getSigning_csr() == null) {
+                log.info("MTLS csr or signing csr is null or empty");
                 return ResponseEntity.badRequest().body(
                         new CertificateRespond( "error", "CSRs for mTLS and signing are required",null,null, null, null)
                 );
             }
 
-            X509Certificate mtlsCert = certificateService.signCSR(
+            X509Certificate mtlsCert = certificateService.signCSR("mtls",
                     certificateRequest.getMtls_csr(),
                     appConfig.getSecurity().getMtlsCaCertPath(),
                     appConfig.getSecurity().getMtlsCaKeyPath()
 
             );
 
-            X509Certificate signingCert = certificateService.signCSR(
+            X509Certificate signingCert = certificateService.signCSR("signing",
                     certificateRequest.getSigning_csr(),
                     appConfig.getSecurity().getSigningCaCertPath(),
                     appConfig.getSecurity().getSigningCaKeyPath()
@@ -100,7 +101,7 @@ public class TlsController {
 
             String mtlsRootCa = certificateUtilsService.loadCertAsBase64(appConfig.getSecurity().getMtlsCaCertPath());
             String signingRootCa = certificateUtilsService.loadCertAsBase64(appConfig.getSecurity().getSigningCaCertPath());
-
+            log.info("csr's signed and imported certificates successfully.");
             return ResponseEntity.ok()
                    .body(
                    new CertificateRespond(
@@ -112,8 +113,8 @@ public class TlsController {
                             List.of(certificateUtilsService.toBase64(signingCert), signingRootCa)
                    )
                    );
-
         } catch (Exception e) {
+            log.info(e.getMessage());
             return ResponseEntity.status(500).body(
                    new CertificateRespond( "error", e.getMessage(),null,null, null, null)
             );

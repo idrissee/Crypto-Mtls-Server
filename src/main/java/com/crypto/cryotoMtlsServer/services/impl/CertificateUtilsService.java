@@ -95,7 +95,7 @@ public class CertificateUtilsService implements ICertificateUtilsService {
                 try (JcaPEMWriter pemWriter = new JcaPEMWriter(sw)) {
                     pemWriter.writeObject(cert);
                 }
-                return java.util.Base64.getEncoder().encodeToString(sw.toString().getBytes());
+                return Base64.getEncoder().encodeToString(sw.toString().getBytes());
             }
         }
 
