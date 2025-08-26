@@ -109,16 +109,6 @@ public class CertificateUtilsService implements ICertificateUtilsService {
         return certs[0].getSubjectX500Principal().getName();
     }
 
-    @Override
-    public void checkCsr(String mtls_csr, String signing_csr){
-
-        if (mtls_csr == null || signing_csr == null) {
-            log.info("MTLS csr or signing csr is null or empty");
-
-            throw new MissingCertificateException("CSRs for mTLS and signing are required");
-        }
-
-    }
 
 }
 

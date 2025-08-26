@@ -15,5 +15,4 @@ public interface ICertificateUtilsService {
 
     String checkCertificate(X509Certificate[] certs);
 
-    void checkCsr(String mtls_csr, String signing_csr);
 }

@@ -1,7 +1,6 @@
 package com.crypto.cryotoMtlsServer.controllers;
 
 import com.crypto.cryotoMtlsServer.configuration.AppConfig;
-import com.crypto.cryotoMtlsServer.exceptions.MissingCertificateException;
 import com.crypto.cryotoMtlsServer.model.dtos.CertificateRequest;
 import com.crypto.cryotoMtlsServer.model.dtos.CertificateRespond;
 import com.crypto.cryotoMtlsServer.services.interfaces.ICertificateService;
@@ -81,11 +80,9 @@ public class TlsController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Certificates imported successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error occurred while processing the request"),
-            @ApiResponse(responseCode = "400", description = "Bad request, invalid input or parameters")
     } )
     public ResponseEntity<CertificateRespond> importCertificates(@Valid @RequestBody CertificateRequest certificateRequest) throws Exception {
 
-           certificateUtilsService.checkCsr(certificateRequest.getMtls_csr(), certificateRequest.getSigning_csr());
 
             X509Certificate mtlsCert = certificateService.signCSR("mtls"
                     , certificateRequest.getMtls_csr()

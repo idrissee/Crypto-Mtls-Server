@@ -20,9 +20,4 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.FORBIDDEN);
     }
 
-    @ExceptionHandler(value = { MissingCsrException.class })
-    public ResponseEntity<?> handleMissingCsrException(MissingCsrException ex) {
-
-        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
-    }
 }
