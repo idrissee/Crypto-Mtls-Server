@@ -15,4 +15,7 @@ public interface ICertificateUtilsService {
 
     String checkCertificate(X509Certificate[] certs);
 
+    X509Certificate parseCertificateFromAnyFormat(String certString) throws Exception;
+
+    X509Certificate generateX509(byte[] derBytes) throws Exception;
 }

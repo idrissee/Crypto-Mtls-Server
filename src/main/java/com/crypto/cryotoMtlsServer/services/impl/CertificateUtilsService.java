@@ -9,6 +9,8 @@ import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemReader;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -16,8 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.PrivateKey;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
+import java.security.cert.*;
 import java.util.Base64;
 
 @Service
@@ -110,6 +111,28 @@ public class CertificateUtilsService implements ICertificateUtilsService {
     }
 
 
+    @Override
+    public X509Certificate parseCertificateFromAnyFormat(String certString) throws Exception {
+        if (certString.contains("-----BEGIN CERTIFICATE-----")) {
+            // PEM case
+            try (PemReader pemReader = new PemReader(new StringReader(certString))) {
+                PemObject pemObject = pemReader.readPemObject();
+                byte[] derBytes = pemObject.getContent();
+                return generateX509(derBytes);
+            }
+        } else {
+            // Assume Base64 DER
+            byte[] derBytes = Base64.getDecoder().decode(certString);
+            return generateX509(derBytes);
+        }
+    }
+
+    @Override
+    public X509Certificate generateX509(byte[] derBytes) throws Exception {
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        return (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(derBytes));
+    }
 }
+
 
 

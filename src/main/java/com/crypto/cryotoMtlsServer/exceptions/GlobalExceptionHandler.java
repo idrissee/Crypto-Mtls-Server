@@ -20,4 +20,23 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.FORBIDDEN);
     }
 
+    @ExceptionHandler(value = { ChallengeNotFoundException.class })
+        public ResponseEntity<?> handleChallengeNotFoundException(ChallengeNotFoundException ex) {
+
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = { CertNotTrustedException.class })
+    public ResponseEntity<?> handleCertNotTrustedException(CertNotTrustedException ex) {
+
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(value = { SignatureNotValidException.class })
+    public ResponseEntity<?> handleSignatureNotValidException(SignatureNotValidException ex) {
+
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+
 }

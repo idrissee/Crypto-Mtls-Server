@@ -49,6 +49,7 @@ public class TlsController {
         response.put("status", "success");
         response.put("message", "TLS handshake completed successfully.");
 
+        log.info("TLS handshake completed successfully");
         return new ResponseEntity<>(response , HttpStatus.OK);
     }
 

@@ -15,43 +15,40 @@ import java.util.List;
 @Configuration
 public class SwaggerConfig {
 
-    @Value("${api.openapi.dev-url}")
+    @Value("${api.openapi.tls-url}")
     private String devUrl;
 
-//    @Value("${api.openapi.prod-url}")
-//    private String prodUrl;
+    @Value("${api.openapi.mtls-url}")
+    private String mtlsUrl;
 
     @Bean
     public OpenAPI myOpenAPI() {
-
-        // Define client certificate auth scheme (MTLS)
         SecurityScheme mtlsScheme = new SecurityScheme()
                 .type(SecurityScheme.Type.MUTUALTLS)
-                .description("Provide client certificate for mTLS");
+                .description("mTLS authentication required. Provide a client certificate issued by the MTLS Root CA.");
 
-        Server devServer = new Server();
-        devServer.setUrl(devUrl);
-        devServer.setDescription(" Crypto-MTLS Server (Development)");
+        Server tlsServer = new Server();
+        tlsServer.setUrl(devUrl);
+        tlsServer.setDescription("TLS server (8443) for public endpoints");
 
-//        Server prodServer = new Server();
-//        prodServer.setUrl(prodUrl);
-//        prodServer.setDescription("Crypto-MTLS Server (Production)");
+        Server mtlsServer = new Server();
+        mtlsServer.setUrl(mtlsUrl);
+        mtlsServer.setDescription("mTLS server (9443) for protected endpoints (requires client cert)");
 
-        Contact contact = new Contact();
-                contact.setEmail("mahieddineidris.cheriet@gmail.com");
-                contact.setName("Idris");
+        Contact contact = new Contact()
+                .email("mahieddineidris.cheriet@gmail.com")
+                .name("Idris");
 
-//        License license = new License()
-//                .name("Apache 2.0")
-//                .url("http://www.apache.org/licenses/LICENSE-2.0.html");
+        Info info = new Info()
+                .title("Crypto mTLS Server API")
+                .version("1.0")
+                .contact(contact)
+                .description("Demo API with TLS & mTLS separation");
 
-        return new OpenAPI()
-                .info(new Info()
-                        .title("Crypto-MTLS Server API")
-                        .version("1.0")
-                        .contact(contact)
-                        .description("API endpoints for TLS and mutual TLS testing."))
-                .servers(List.of(devServer))
+        return new OpenAPI().
+                info(info)
+                .servers(List.of(tlsServer, mtlsServer))
                 .schemaRequirement("mtls", mtlsScheme);
     }
+
 }
